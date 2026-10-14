@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * LogMapLoadModel: Update: [Map Name: Foxtrot | Changed: TRUE] [Local World: TRUE | Changed: TRUE]
  *   [Match Setup: FALSE | Changed: FALSE] ... [URL: 192.207.0.1:7107/Game/Maps/Foxtrot/Foxtrot?...BombGameMode...]
  * </pre>
- * "Foxtrot" is Ascent's internal codename; MapCodenames translates. This is the same
+ * "Foxtrot" is Breeze's internal codename; MapCodenames translates. This is the same
  * passive log-reading technique commercial companion apps use - nothing is injected
  * into or read from the game process.
  */

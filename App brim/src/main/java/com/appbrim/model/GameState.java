@@ -29,7 +29,7 @@ public class GameState {
     private volatile String map;
     /** Where the map value came from: "log", "manual" or null. */
     private volatile String mapSource;
-    /** Internal log codename of the current map ("Foxtrot"), for confirmation UIs. */
+    /** Internal log codename of the current map ("Foxtrot", i.e. Breeze), for confirmation UIs. */
     private volatile String mapCodename;
     /** True while the Valorant process appears to be writing to its log. */
     private volatile boolean gameRunning;

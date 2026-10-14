@@ -7,27 +7,28 @@ import java.util.Map;
 
 /**
  * Translates Valorant's internal map codenames (as written to ShooterGame.log,
- * e.g. "Foxtrot" for Ascent) into the display names lineupsvalorant.com expects.
+ * e.g. "Foxtrot" for Breeze) into the display names lineupsvalorant.com expects.
  * Learned corrections are stored in prefs so unknown/new maps only need to be
  * confirmed once.
  */
 public final class MapCodenames {
 
-    /** Built-in codename -> display name. Confidence-free guesses still get an entry. */
+    /**
+     * Built-in codename -> display name. Only community-verified mappings live here.
+     * Codenames not listed (e.g. newer maps) trigger the "which map is this?" bar once
+     * and are then remembered in prefs - better than silently guessing wrong.
+     */
     private static final Map<String, String> BUILTIN = new LinkedHashMap<>(Map.ofEntries(
-            Map.entry("Foxtrot", "Ascent"),
+            Map.entry("Ascent", "Ascent"),
             Map.entry("Duality", "Bind"),
-            Map.entry("Ascent", "Haven"),      // yes: Haven's internal name really is "Ascent"
-            Map.entry("Portals", "Split"),
-            Map.entry("Canyon", "Breeze"),
+            Map.entry("Triad", "Haven"),
+            Map.entry("Bonsai", "Split"),
             Map.entry("Port", "Icebox"),
-            Map.entry("Polaris", "Fracture"),
-            Map.entry("Cascades", "Pearl"),
-            Map.entry("Cassia", "Lotus"),
-            Map.entry("Fossil", "Sunset"),
-            Map.entry("Coxel", "Abyss"),
-            Map.entry("Drift", "Corrode"),
-            Map.entry("Summit", "Summit")
+            Map.entry("Foxtrot", "Breeze"),
+            Map.entry("Canyon", "Fracture"),
+            Map.entry("Pitt", "Pearl"),
+            Map.entry("Jam", "Lotus"),
+            Map.entry("Juliett", "Sunset")
     ));
 
     /** Non-playable "maps" seen in the log that must never surface as maps. */
@@ -59,10 +60,7 @@ public final class MapCodenames {
 
     /** True when the built-in mapping for this codename is a guess, not community-verified. */
     public static boolean isGuess(String codename) {
-        return codename != null && switch (codename) {
-            case "Coxel", "Drift", "Summit" -> true;
-            default -> false;
-        };
+        return false;
     }
 
     /** Remember a user-confirmed mapping (also fixes wrong built-in guesses). */
