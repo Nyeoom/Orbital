@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,6 +54,16 @@ public final class Prefs {
         return v instanceof Boolean b ? b : def;
     }
 
+    public synchronized int getInt(String key, int def) {
+        Object v = values.get(key);
+        return v instanceof Number n ? n.intValue() : def;
+    }
+
+    public synchronized double getDouble(String key, double def) {
+        Object v = values.get(key);
+        return v instanceof Number n ? n.doubleValue() : def;
+    }
+
     public synchronized void put(String key, Object value) {
         values.put(key, value);
         save();
@@ -65,10 +76,17 @@ public final class Prefs {
         }
     }
 
+    /** Written via a temp file + move so a crash mid-write can't corrupt the settings. */
     private void save() {
         try {
             Files.createDirectories(DIR);
-            Files.writeString(FILE, gson.toJson(values));
+            Path tmp = DIR.resolve("prefs.json.tmp");
+            Files.writeString(tmp, gson.toJson(values));
+            try {
+                Files.move(tmp, FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException atomicUnsupported) {
+                Files.move(tmp, FILE, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (IOException e) {
             // Best effort only.
         }

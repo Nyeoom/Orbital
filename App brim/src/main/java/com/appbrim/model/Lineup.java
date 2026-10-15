@@ -24,6 +24,22 @@ public class Lineup {
 
     private String type;
 
+    public Lineup() {
+    }
+
+    /** For tests and for building rows without going through JSON. */
+    public Lineup(long id, String title, String map, String start, String end,
+                  String abilities, int numImages, long score) {
+        this.id = id;
+        this.title = title;
+        this.map = map;
+        this.start = start;
+        this.end = end;
+        this.abilitiesRaw = abilities;
+        this.numImages = numImages;
+        this.score = score;
+    }
+
     public long getId() {
         return id;
     }

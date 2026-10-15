@@ -1,4 +1,4 @@
-/* App Brim — Valorant-flavored dark theme */
+/* Orbital — Valorant-flavored dark theme */
 
 * {
     -brim-bg: #0e1621;
@@ -12,12 +12,11 @@
     -brim-red-deep: #bd3341;
     -brim-green: #3ddc97;
     -brim-teal: #46e0c0;
-    -brim-font: "Segoe UI Variable Display", "Segoe UI", "Arial", sans-serif;
 }
 
 .root {
     -fx-background-color: -brim-bg;
-    -fx-font-family: -brim-font;
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
     -fx-text-fill: -brim-text;
     -fx-font-size: 13px;
 }
@@ -76,7 +75,6 @@
     -fx-background-radius: 100;
     -fx-min-width: 7; -fx-min-height: 7; -fx-max-width: 7; -fx-max-height: 7;
     -fx-background-color: transparent;
-    -fx-margin: 0 8 0 0;
 }
 
 .map-btn .dot.on { -fx-background-color: -brim-green; }
@@ -104,6 +102,8 @@
     -fx-background-color: -brim-bg-2;
     -fx-padding: 12 18 12 18;
     -fx-spacing: 12;
+    -fx-hgap: 12;
+    -fx-vgap: 8;
     -fx-border-color: transparent transparent -brim-border transparent;
     -fx-border-width: 0 0 1 0;
     -fx-alignment: center-left;
@@ -235,7 +235,7 @@
 
 .detail-root { -fx-background-color: -brim-bg; -fx-padding: 20; -fx-spacing: 14; }
 
-.detail-title { -fx-font-size: 22px; -fx-font-weight: 800; }
+.detail-title { -fx-font-size: 22px; -fx-font-weight: 800; -fx-text-fill: -brim-text; }
 
 .detail-image {
     -fx-background-radius: 10;
@@ -284,15 +284,6 @@
     -fx-font-size: 14px;
 }
 
-.footer-bar {
-    -fx-background-color: -brim-bg-2;
-    -fx-padding: 6 18 6 18;
-    -fx-border-color: -brim-border transparent transparent transparent;
-    -fx-border-width: 1 0 0 0;
-}
-
-.footer-bar .label { -fx-text-fill: #5d7089; -fx-font-size: 11px; }
-
 .confirm-bar {
     -fx-background-color: #3a1f24;
     -fx-border-color: transparent transparent -brim-red-deep transparent;
@@ -315,7 +306,7 @@
 .combo-box .list-cell { -fx-text-fill: -brim-text; -fx-background-color: -brim-panel; }
 
 /* Calibration / picker dialog */
-.calib-title { -fx-font-size: 16px; -fx-font-weight: 800; }
+.calib-title { -fx-font-size: 16px; -fx-font-weight: 800; -fx-text-fill: -brim-text; }
 .calib-hint { -fx-text-fill: -brim-dim; -fx-font-size: 12px; }
 .marker-pin {
     -fx-background-radius: 999;
@@ -326,3 +317,49 @@
 .marker-pin.red { -fx-background-color: #ff4655cc; -fx-border-color: white; }
 .marker-pin.white { -fx-background-color: #ffffffcc; -fx-border-color: black; }
 .sel-rect { -fx-fill: transparent; -fx-stroke: -brim-red; -fx-stroke-width: 2; -fx-stroke-dash-array: 6 6; }
+
+/* ---------- Orbital additions ---------- */
+
+.thumb-box {
+    -fx-background-color: -brim-bg;
+    -fx-background-radius: 8;
+    -fx-alignment: center;
+}
+
+.star {
+    -fx-background-color: #0e1621cc;
+    -fx-background-radius: 999;
+    -fx-padding: 1 7 2 7;
+    -fx-text-fill: -brim-dim;
+    -fx-font-size: 14px;
+    -fx-cursor: hand;
+}
+
+.star:hover { -fx-text-fill: white; }
+.star.on { -fx-text-fill: #ffd166; }
+
+.mini-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #61748b;
+    -fx-padding: 0 4 0 4;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+}
+
+.mini-btn:hover { -fx-text-fill: -brim-red; }
+
+.status-strip {
+    -fx-background-color: -brim-panel;
+    -fx-text-fill: -brim-text;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-padding: 8 18 8 18;
+    -fx-border-color: transparent transparent -brim-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* JavaFX stretches a slider track by its corner radius, so keep the radius small. */
+.opacity-slider .track { -fx-background-color: -brim-border; -fx-background-radius: 3; -fx-padding: 3; }
+.opacity-slider .thumb { -fx-background-color: -brim-red; }
+
+.map-btn.active .dot.on { -fx-background-color: white; }

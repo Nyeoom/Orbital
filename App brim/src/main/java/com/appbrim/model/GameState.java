@@ -73,24 +73,38 @@ public class GameState {
     public void setPhaseAndMap(Phase newPhase, String newMap, String codename, String source) {
         boolean phaseChanged = this.phase != newPhase;
         boolean mapChanged = !eq(this.map, newMap);
-        if (!phaseChanged && !mapChanged) {
+        // The codename matters even when the display name stays null: an unknown map
+        // arrives as (IN_MATCH, null, "SomeCodename") and the UI needs the codename
+        // to ask the user which map it is.
+        boolean codenameChanged = !eq(this.mapCodename, codename);
+        if (!phaseChanged && !mapChanged && !codenameChanged) {
             return;
         }
         this.phase = newPhase;
+        this.mapCodename = codename;
         if (mapChanged) {
             this.map = newMap;
             this.mapSource = source;
-            this.mapCodename = codename;
             // A different map invalidates anything we knew about the spike/plant.
-            this.plantSite = null;
-            this.plantCallout = null;
-            this.playerCallout = null;
-            this.spikeX = -1;
-            this.spikeY = -1;
-            this.playerX = -1;
-            this.playerY = -1;
+            resetRoundData();
         }
         fireChanged();
+    }
+
+    /** Forget the spike/player positions (new round, new map). Fires a change. */
+    public void clearPlant() {
+        resetRoundData();
+        fireChanged();
+    }
+
+    private void resetRoundData() {
+        this.plantSite = null;
+        this.plantCallout = null;
+        this.playerCallout = null;
+        this.spikeX = -1;
+        this.spikeY = -1;
+        this.playerX = -1;
+        this.playerY = -1;
     }
 
     public void setGameRunning(boolean running) {
@@ -104,9 +118,7 @@ public class GameState {
         if (!eq(this.map, newMap)) {
             this.map = newMap;
             this.mapSource = "manual";
-            this.plantSite = null;
-            this.plantCallout = null;
-            this.playerCallout = null;
+            resetRoundData();
         }
         fireChanged();
     }

@@ -8,19 +8,16 @@ import com.appbrim.ui.MainWindow;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * App Brim - Brimstone post-plant lineup assistant.
+ * Orbital - Brimstone post-plant lineup assistant.
  *
  * Follows the running Valorant game from its local log (map + phase), and when
  * the player presses F9 with the full map open, screenshots the planted-spike
@@ -52,7 +49,7 @@ public class App extends Application {
             t.setDaemon(true);
             return t;
         });
-        imageIo = Executors.newFixedThreadPool(2, r -> {
+        imageIo = Executors.newFixedThreadPool(4, r -> {
             Thread t = new Thread(r, "appbrim-image-io");
             t.setDaemon(true);
             return t;
@@ -74,27 +71,24 @@ public class App extends Application {
         }
 
         loadStageIcon(stage);
+        imageIo.execute(() -> com.appbrim.api.ImageCache.get().prune());
 
-        stage.setOnCloseRequest(e -> shutdown());
+        stage.setOnCloseRequest(e -> {
+            ui.saveWindowState();
+            shutdown();
+        });
         stage.setOnHidden(e -> shutdown());
     }
 
+    /** Bundled icon: no network needed, shows up in the taskbar immediately. */
     private void loadStageIcon(Stage stage) {
-        imageIo.execute(new Task<Void>() {
-            @Override
-            protected Void call() throws Exception {
-                // WebP decode needs the sejda webp-imageio SPI, which self-registers
-                // from META-INF/services on first ImageIO use.
-                String url = LineupsClient.CDN + "/static/agents/Brimstone.webp";
-                byte[] data = client.download(url);
-                BufferedImage bi = javax.imageio.ImageIO.read(new ByteArrayInputStream(data));
-                if (bi != null) {
-                    Image icon = javafx.embed.swing.SwingFXUtils.toFXImage(bi, null);
-                    Platform.runLater(() -> stage.getIcons().add(icon));
-                }
-                return null;
+        try (java.io.InputStream in = App.class.getResourceAsStream("/icon.png")) {
+            if (in != null) {
+                stage.getIcons().add(new Image(in));
             }
-        });
+        } catch (java.io.IOException ignored) {
+            // The default Java icon is an acceptable fallback.
+        }
     }
 
     private void shutdown() {
