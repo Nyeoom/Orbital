@@ -65,8 +65,22 @@ src/main/java/com/appbrim
 src/test/java/com/appbrim
   *Test            JUnit 5 tests
   MockSite         offline stand-in for lineupsvalorant.com
-                   (java -cp ... com.appbrim.MockSite 8099, then run the app with
-                    -Dorbital.site=http://127.0.0.1:8099 -Dorbital.cdn=http://127.0.0.1:8099)
+  FakeMap          fake in-game map window (red spike + white player marker)
 ```
+
+## Trying it without a match
+
+`MockSite` and `FakeMap` (both in `src/test`) let you exercise the whole F9 flow offline:
+
+```
+mvn -q test-compile dependency:build-classpath "-Dmdep.outputFile=target\cp.txt"
+set /p CP=<target\cp.txt
+start java -cp "target\classes;target\test-classes;%CP%" com.appbrim.MockSite 8099
+start java -cp "target\classes;target\test-classes;%CP%" com.appbrim.FakeMap
+java -Dorbital.site=http://127.0.0.1:8099 -Dorbital.cdn=http://127.0.0.1:8099 -cp "target\classes;%CP%" com.appbrim.Launcher
+```
+
+Pick Breeze on the left, calibrate a box around the fake map window, press F9: the spike resolves to
+"A Site" and you to "A Main", and the grid shows the mock lineups from your position.
 
 The package name is still `com.appbrim` for historical reasons; renaming it is a pure IDE refactor.
