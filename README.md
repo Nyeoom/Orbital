@@ -28,7 +28,8 @@ spike was planted and where you are standing, and pulls matching Brimstone lineu
 
 ## Running
 
-Requires JDK 21+ and Maven. VALORANT must run in **borderless/windowed** mode so Orbital can
+The project lives in the `Orbital/` folder of this repo; run the commands below from inside it
+(`cd Orbital`). Requires JDK 21+ and Maven. VALORANT must run in **borderless/windowed** mode so Orbital can
 see the map.
 
 ```
@@ -55,6 +56,7 @@ once and Orbital remembers your answer.
 ## Project layout
 
 ```
+Orbital/                   Maven project (pom.xml, run-app.bat, package.bat, packaging/)
 src/main/java/com/appbrim
   App, Launcher, Prefs
   api/     LineupsClient (site JSON API, caching, retry), ImageCache
