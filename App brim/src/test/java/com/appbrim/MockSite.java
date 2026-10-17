@@ -39,6 +39,8 @@ public final class MockSite implements AutoCloseable {
     public final AtomicInteger calloutCalls = new AtomicInteger();
     /** When > 0, the next N get_results calls answer 500 (to test retry / error UI). */
     public volatile int failNextResults;
+    /** Raw JSON body of the most recent get_results request. */
+    public volatile String lastResultsBody;
 
     public MockSite(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
@@ -49,8 +51,9 @@ public final class MockSite implements AutoCloseable {
                 respond(ex, 500, "text/plain", "boom".getBytes(StandardCharsets.UTF_8));
                 return;
             }
-            JsonObject req = body(ex);
-            respondJson(ex, results(req));
+            String raw = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            lastResultsBody = raw;
+            respondJson(ex, results(gson.fromJson(raw, JsonObject.class)));
         });
         server.createContext("/get_lineup", ex -> respondJson(ex, lineup(body(ex).get("id").getAsLong())));
         server.createContext("/get_callout/", ex -> {

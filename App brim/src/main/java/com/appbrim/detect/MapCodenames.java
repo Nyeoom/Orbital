@@ -37,7 +37,8 @@ public final class MapCodenames {
             return true;
         }
         return switch (codename) {
-            case "Init", "Login", "MainMenuV2", "CharacterSelectPersistentLevel", "LoadingScreen", "Menubar" -> true;
+            case "Init", "Login", "MainMenuV2", "CharacterSelectPersistentLevel", "LoadingScreen", "Menubar",
+                 "Poveglia" /* The Range */ -> true;
             default -> false;
         };
     }
@@ -56,11 +57,6 @@ public final class MapCodenames {
             return learned;
         }
         return BUILTIN.get(codename);
-    }
-
-    /** True when the built-in mapping for this codename is a guess, not community-verified. */
-    public static boolean isGuess(String codename) {
-        return false;
     }
 
     /** Remember a user-confirmed mapping (also fixes wrong built-in guesses). */

@@ -1,5 +1,5 @@
  @echo off
-rem Builds (if needed) and launches App Brim.
+rem Builds (if needed) and launches Orbital.
 call "%~dp0tools-env.bat"
 call mvn -q -B compile dependency:build-classpath "-Dmdep.outputFile=target\cp.txt"
 if errorlevel 1 exit /b 1

@@ -1,0 +1,16 @@
+# Build output
+target/
+dist/
+*.class
+
+# IDE
+.idea/workspace.xml
+.idea/shelf/
+.idea/tasks.xml
+.idea/usage.statistics.xml
+*.iml
+out/
+
+# OS
+Thumbs.db
+.DS_Store
