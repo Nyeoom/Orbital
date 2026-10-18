@@ -8,6 +8,18 @@ spike was planted and where you are standing, and pulls matching Brimstone lineu
 > its memory: it reads the game's log file and takes screenshots, nothing else. Lineups and images
 > belong to their authors on lineupsvalorant.com.
 
+## Download
+
+Grab the latest build from the [**Releases**](../../releases/latest) page. No Java needed:
+
+- `Orbital-Setup-<version>.exe`: installer (recommended)
+- `Orbital-<version>-windows-portable.zip`: unzip and run `Orbital\Orbital.exe`
+
+Windows will warn that the app is unsigned (*SmartScreen*): **More info -> Run anyway**. Releases
+are built by GitHub Actions from this repo (see `.github/workflows/release.yml`), and the release
+notes list SHA-256 checksums. `Orbital.exe --selftest report.txt` runs diagnostics (JavaFX, WebP,
+HTTPS, a live search against the site) if something doesn't work on your PC.
+
 ## How it works
 
 | Step | What happens |
@@ -41,10 +53,25 @@ mvn test                   # unit tests (no network, no display needed)
 First F9 asks you to drag a box around the map (**Calibrate map region** in the sidebar redoes it).
 Resolution changes need a recalibration; one region is stored per screen resolution.
 
-### Build a double-clickable app
+### Build the Windows app yourself
 
 ```
-package.bat                # -> dist\Orbital\Orbital.exe  (needs JDK 21 with jpackage; no WiX needed)
+package.bat                 # -> dist\Orbital\Orbital.exe (portable folder)
+package.bat 1.2.0 installer # also dist\Orbital-Setup-1.2.0.exe (needs WiX Toolset 3.x on PATH)
+```
+
+Needs JDK 21 (includes `jpackage`) and Maven. The script keeps an explicit module list for the
+bundled Java runtime on purpose: `jpackage`'s own detection leaves out `jdk.crypto.ec`, which makes
+every HTTPS request to the lineup site fail the TLS handshake.
+
+### Publishing a release
+
+Push a version tag; GitHub Actions builds on Windows, runs the tests and the packaged app's
+self-test, and attaches the installer and zip to a new release:
+
+```
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 ## Unknown maps

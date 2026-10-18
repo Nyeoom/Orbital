@@ -1,0 +1,175 @@
+name: Release
+
+# Push a tag like v1.0.0 to build Orbital on Windows and publish a GitHub release with
+#   Orbital-Setup-<version>.exe              (installer)
+#   Orbital-<version>-windows-portable.zip   (unzip and run Orbital\Orbital.exe)
+# "Run workflow" (workflow_dispatch) does the same build and checks without publishing.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: Orbital/pom.xml
+
+      - name: Work out the version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="0.0.${GITHUB_RUN_NUMBER}"
+          fi
+          if ! [[ "$V" =~ ^[0-9]+(\.[0-9]+){1,2}$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not a plain version like v1.2.3 (jpackage needs digits and dots only)"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Building Orbital $V"
+
+      - name: Run unit tests
+        working-directory: Orbital
+        shell: bash
+        run: mvn -B -ntp test 2>&1 | tee ../build-test.log
+
+      - name: Make sure WiX Toolset 3 is available (needed for the .exe installer)
+        shell: pwsh
+        run: |
+          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+            choco install wixtoolset -y --no-progress
+          }
+          $wix = Get-ChildItem "C:\Program Files (x86)" -Directory -Filter "WiX Toolset v3*" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($wix) {
+            $bin = Join-Path $wix.FullName "bin"
+            Add-Content -Path $env:GITHUB_PATH -Value $bin
+            $env:PATH = "$env:PATH;$bin"
+          }
+          (Get-Command candle.exe).Source
+
+      - name: Build the app image and the installer
+        working-directory: Orbital
+        shell: bash
+        run: cmd //c "package.bat ${{ steps.ver.outputs.version }} installer" 2>&1 | tee ../build-package.log
+
+      - name: Self-test the packaged app (real runtime, real site)
+        shell: pwsh
+        run: |
+          $exe = "Orbital/dist/Orbital/Orbital.exe"
+          if (-not (Test-Path $exe)) { throw "Missing $exe" }
+          $report = Join-Path $PWD "selftest.txt"
+          $p = Start-Process -FilePath $exe -ArgumentList '--selftest', $report -PassThru
+          $null = $p.Handle   # keeps ExitCode readable after WaitForExit
+          if (-not $p.WaitForExit(240000)) { $p.Kill(); throw "Self-test did not finish within 4 minutes" }
+          if (Test-Path $report) {
+            $text = Get-Content $report -Raw
+            Write-Host $text
+            $enc = $text.Replace('%','%25').Replace("`r",'').Replace("`n",'%0A')
+            Write-Host "::notice title=Orbital self-test (portable build)::$enc"
+            Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value ("### Self-test`n``````n" + $text + "``````")
+          } else {
+            Write-Host "::error::The self-test wrote no report (exit code $($p.ExitCode))"
+          }
+          if ($p.ExitCode -ne 0) { throw "Self-test failed with exit code $($p.ExitCode)" }
+
+      - name: Launch the real app and make sure it stays up
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "Orbital/dist/Orbital/Orbital.exe" -PassThru
+          Start-Sleep -Seconds 20
+          $p.Refresh()
+          if ($p.HasExited) { throw "Orbital.exe exited by itself with code $($p.ExitCode) within 20 seconds" }
+          Write-Host "Orbital.exe is still running after 20s (window title: '$($p.MainWindowTitle)')"
+          Write-Host "::notice title=App launch::Orbital.exe stayed up for 20s, main window title '$($p.MainWindowTitle)'"
+          Stop-Process -Id $p.Id -Force
+
+      - name: Try a silent install of the installer (informational)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          $setup = "Orbital/dist/Orbital-Setup-$v.exe"
+          $p = Start-Process -FilePath $setup -ArgumentList '/qn' -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(240000)) { $p.Kill(); throw "installer did not finish within 4 minutes" }
+          $installed = Join-Path $env:LOCALAPPDATA "Orbital\Orbital.exe"
+          $found = Test-Path $installed
+          Write-Host "::notice title=Installer::exit code $($p.ExitCode); installed Orbital.exe present at $installed : $found"
+          if (-not $found) { throw "installer ran (exit $($p.ExitCode)) but Orbital.exe was not found at $installed" }
+
+      - name: Zip the portable build, write checksums and release notes
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          $setup = "Orbital/dist/Orbital-Setup-$v.exe"
+          $zip = "Orbital/dist/Orbital-$v-windows-portable.zip"
+          Compress-Archive -Path "Orbital/dist/Orbital" -DestinationPath $zip -Force
+          foreach ($f in @($setup, $zip)) {
+            if (-not (Test-Path $f)) { throw "Missing expected file $f" }
+            "{0}  {1:N1} MB" -f $f, ((Get-Item $f).Length / 1MB) | Write-Host
+          }
+          if ((Get-Item $setup).Length -lt 20MB) { throw "Installer is suspiciously small" }
+          $setupName = Split-Path $setup -Leaf
+          $zipName = Split-Path $zip -Leaf
+          $setupSha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          $zipSha = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          $t = Get-Content .github/release-notes.md -Raw
+          $t = $t.Replace('{{VERSION}}', $v).Replace('{{SETUP_NAME}}', $setupName).Replace('{{ZIP_NAME}}', $zipName)
+          $t = $t.Replace('{{SETUP_SHA}}', $setupSha).Replace('{{ZIP_SHA}}', $zipSha)
+          Set-Content -Path release-notes.out.md -Value $t -Encoding utf8
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: ${{ steps.ver.outputs.version }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "Orbital/dist/Orbital-Setup-$V.exe" \
+            "Orbital/dist/Orbital-$V-windows-portable.zip" \
+            --title "Orbital $GITHUB_REF_NAME" \
+            --notes-file release-notes.out.md \
+            --verify-tag
+
+      - name: Keep the build outputs on manual runs
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbital-windows-${{ steps.ver.outputs.version }}
+          path: |
+            Orbital/dist/Orbital-Setup-*.exe
+            Orbital/dist/*.zip
+          if-no-files-found: warn
+
+      - name: Show logs as annotations when something failed
+        if: failure()
+        shell: bash
+        run: |
+          enc() { local s="$1"; s="${s//'%'/'%25'}"; s="${s//$'\r'/}"; s="${s//$'\n'/'%0A'}"; printf '%s' "$s"; }
+          for f in build-test.log build-package.log; do
+            if [ -f "$f" ]; then
+              tailtxt="$(tail -n 45 "$f" | cut -c1-220 | tail -c 3600)"
+              echo "::error title=$f (last lines)::$(enc "$tailtxt")"
+            fi
+          done
+          if [ -d Orbital/target/surefire-reports ]; then
+            bad="$(grep -l -E 'FAILURE|ERROR' Orbital/target/surefire-reports/*.txt 2>/dev/null | head -3)"
+            for r in $bad; do
+              echo "::error title=surefire $(basename "$r")::$(enc "$(head -c 3000 "$r")")"
+            done
+          fi

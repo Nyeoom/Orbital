@@ -8,6 +8,10 @@ import javafx.application.Application;
  */
 public final class Launcher {
     public static void main(String[] args) {
+        if (args.length > 0 && "--selftest".equals(args[0])) {
+            // Diagnostics inside the packaged runtime: Orbital.exe --selftest [report.txt]
+            System.exit(SelfTest.run(args.length > 1 ? java.nio.file.Path.of(args[1]) : null));
+        }
         Application.launch(App.class, args);
     }
 
